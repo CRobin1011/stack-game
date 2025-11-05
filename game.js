@@ -16,6 +16,8 @@ let gameState = {
     direction: 1
 };
 
+let animationId = null;
+
 // Block properties
 const BLOCK_HEIGHT = 30;
 const INITIAL_BLOCK_WIDTH = 100;
@@ -197,7 +199,7 @@ function endGame() {
 function gameLoop() {
     update();
     draw();
-    requestAnimationFrame(gameLoop);
+    animationId = requestAnimationFrame(gameLoop);
 }
 
 // Event listeners
@@ -205,7 +207,6 @@ canvas.addEventListener('click', placeBlock);
 
 restartBtn.addEventListener('click', () => {
     initGame();
-    gameLoop();
 });
 
 // Start the game
