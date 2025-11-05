@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css">
+    <title>Titik Pusat</title>
+  </head>
+  <body>
+    <!-- Game Mode Selection -->
+    <div id="mode-selector" class="mode-selector hidden">
+      <div class="mode-backdrop"></div>
+      <div class="mode-content">
+        <h2>Select Game Mode</h2>
+        <div class="mode-grid">
+          <div class="mode-card" data-mode="classic">
+            <h3>Classic</h3>
+            <p>Traditional stack game with steady pace</p>
+            <div class="mode-stats">
+              <span>Speed: Normal</span>
+            </div>
+          </div>
+          <div class="mode-card" data-mode="rush">
+            <h3>Rush</h3>
+            <p>Fast-paced mode with increasing speed</p>
+            <div class="mode-stats">
+              <span>Speed: Fast</span>
+            </div>
+          </div>
+          <div class="mode-card" data-mode="flash">
+            <h3>Flash</h3>
+            <p>Lightning fast mode for experts</p>
+            <div class="mode-stats">
+              <span>Speed: Extreme</span>
+            </div>
+          </div>
+        </div>
+        <div class="mode-actions">
+          <button id="start-selected-mode" class="btn btn-primary">Start Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Instructions -->
+    <div id="instructions">
+      <div class="content">
+        <h2>🎮 Titik Pusat</h2>
+        <p>Stack the blocks on top of each other</p>
+        <p>Perfect alignment gives bonus points!</p>
+        <div class="instruction-buttons">
+          <button id="select-mode-btn" class="btn btn-primary">Select Mode</button>
+          <button id="quick-start-btn" class="btn btn-secondary">Quick Start (Classic)</button>
+        </div>
+        <div class="controls-info">
+          <p><kbd>Space</kbd> or <kbd>Click</kbd> to drop blocks</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Results -->
+    <div id="results">
+      <div class="content">
+        <h2>Game Over!</h2>
+        <div class="final-score">
+          <span>Final Score: </span>
+          <span id="final-score-value">0</span>
+        </div>
+        <div class="quick-stats">
+          <div class="quick-stat">
+            <span class="stat-label">Combo</span>
+            <span class="stat-value" id="quick-combo">0</span>
+          </div>
+          <div class="quick-stat">
+            <span class="stat-label">Focus</span>
+            <span class="stat-value" id="quick-focus">0</span>
+          </div>
+        </div>
+        <div class="result-buttons">
+          <button id="view-review-btn" class="btn btn-primary">View Review</button>
+          <button id="play-again-btn" class="btn btn-secondary">Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game HUD -->
+    <div id="game-hud" class="game-hud">
+      <div id="score" class="hud-score">0</div>
+      <div class="hud-info">
+        <div class="hud-item">
+          <span class="hud-label">Mode</span>
+          <span id="current-mode" class="hud-value">Classic</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Combo</span>
+          <span id="current-combo" class="hud-value">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Focus</span>
+          <span id="current-focus" class="hud-value">--</span>
+        </div>
+      </div>
+      <div class="hud-actions">
+        <button id="pause-btn" class="hud-btn">⏸️</button>
+        <button id="menu-btn" class="hud-btn">🎮</button>
+      </div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div id="stats-panel" class="stats-panel hidden">
+      <div class="stats-backdrop"></div>
+      <div class="stats-content">
+        <div class="stats-header">
+          <h2>All Time Statistics</h2>
+          <button class="stats-close">×</button>
+        </div>
+        <div class="stats-body">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Games</h3>
+              <div class="stat-large" id="total-games">0</div>
+              <div class="stat-sub">Games Played</div>
+            </div>
+            <div class="stat-card">
+              <h3>High Score</h3>
+              <div class="stat-large" id="high-score">0</div>
+              <div class="stat-sub">Personal Best</div>
+            </div>
+            <div class="stat-card">
+              <h3>Focus Index</h3>
+              <div class="stat-large" id="avg-focus">0</div>
+              <div class="stat-sub">Average Focus</div>
+            </div>
+            <div class="stat-card">
+              <h3>Accuracy</h3>
+              <div class="stat-large" id="accuracy">0%</div>
+              <div class="stat-sub">Perfect Rate</div>
+            </div>
+          </div>
+          <div class="detailed-stats">
+            <h3>Detailed Statistics</h3>
+            <div class="detailed-stats-grid">
+              <div class="detailed-stat">
+                <span>Total Score</span>
+                <span id="total-score">0</span>
+              </div>
+              <div class="detailed-stat">
+                <span>Longest Combo</span>
+                <span id="longest-combo">0</span>
+              </div>
+              <div class="detailed-stat">
+                <span>Perfect Blocks</span>
+                <span id="total-perfects">0</span>
+              </div>
+              <div class="detailed-stat">
+                <span>Best Error Rate</span>
+                <span id="best-error">0%</span>
+              </div>
+              <div class="detailed-stat">
+                <span>Play Time</span>
+                <span id="play-time">0m</span>
+              </div>
+              <div class="detailed-stat">
+                <span>Best Focus Index</span>
+                <span id="best-focus-index">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stats-footer">
+          <button id="reset-stats-btn" class="btn btn-danger">Reset All Stats</button>
+          <button id="close-stats-btn" class="btn btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
