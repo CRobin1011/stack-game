@@ -66,10 +66,10 @@ function init() {
     setupEventListeners()
     setupThreeJS()
     setupGame()
-    
+
     // Apply initial mode styling
     gameModes.applyModeStyles()
-    
+
     // Update UI
     updateHUD()
 }
@@ -92,7 +92,7 @@ function setupEventListeners() {
         hideModeSelector()
         startGame(selectedMode)
     })
-    
+
     // Mode cards
     document.querySelectorAll('.mode-card').forEach(card => {
         card.addEventListener('click', (e) => {
@@ -102,7 +102,7 @@ function setupEventListeners() {
             selectedMode = card.dataset.mode
         })
     })
-    
+
     // Game controls
     window.addEventListener('mousedown', eventHandler)
     window.addEventListener('keydown', (event) => {
@@ -111,18 +111,18 @@ function setupEventListeners() {
             eventHandler()
         }
     })
-    
+
     // Results
     viewReviewBtn.addEventListener('click', showReview)
     playAgainBtn.addEventListener('click', () => startGame(gameModes.getCurrentMode()))
-    
+
     // Menu
     menuBtn.addEventListener('click', showStatsPanel)
-    
+
     // Review callbacks
     review.setOnPlayAgain(() => startGame(gameModes.getCurrentMode()))
     review.setOnViewStats(showStatsPanel)
-    
+
     // Window resize
     window.addEventListener('resize', onWindowResize)
 }
@@ -153,7 +153,7 @@ function setupThreeJS() {
     dLight.position.set(10, 20, 0)
     scene.add(dLight)
 
-    renderer = new THREE.WebGLRenderer({antialias: true})
+    renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setAnimationLoop(animate)
     renderer.setPixelRatio(window.devicePixelRatio)
@@ -175,7 +175,7 @@ function setupGame() {
 
     addLayer(0, 0, originalBoxSize, originalBoxSize)
     addLayer(-10, 0, originalBoxSize, originalBoxSize, 'x')
-    
+
     // Hide game HUD initially
     if (gameHudElement) {
         gameHudElement.style.display = 'none'
@@ -214,12 +214,12 @@ function hideStatsPanel() {
 
 function updateStatsPanel() {
     const allTimeStats = stats.getAllTimeStats()
-    
+
     document.getElementById('total-games').textContent = allTimeStats.gamesPlayed
     document.getElementById('high-score').textContent = allTimeStats.highScore
     document.getElementById('avg-focus').textContent = Math.round(allTimeStats.averageFocusIndex)
     document.getElementById('accuracy').textContent = Math.round((1 - allTimeStats.averageErrorPercentage / 100) * 100) + '%'
-    
+
     document.getElementById('total-score').textContent = allTimeStats.totalScore
     document.getElementById('longest-combo').textContent = allTimeStats.longestCombo
     document.getElementById('total-perfects').textContent = allTimeStats.totalPerfects
@@ -231,7 +231,7 @@ function updateStatsPanel() {
 function startGame(mode = GameModes.CLASSIC) {
     // Set game mode
     gameModes.setMode(mode)
-    
+
     // Initialize game state
     autopilot = false
     gameEnded = false
@@ -278,10 +278,10 @@ function startGame(mode = GameModes.CLASSIC) {
 
     // Start tracking stats
     stats.startGame()
-    
+
     // Update HUD
     updateHUD()
-    
+
     // Record block movement start time
     blockMoveStartTime = Date.now()
 }
@@ -302,7 +302,7 @@ function addOverHang(x, z, width, depth) {
 function generateBox(x, y, z, width, depth, falls) {
     const geometry = new THREE.BoxGeometry(width, boxHeight, depth)
     const color = new THREE.Color(`hsl(${30 + stack.length * 4}, 100%, 50%)`)
-    const material = new THREE.MeshLambertMaterial({color})
+    const material = new THREE.MeshLambertMaterial({ color })
     const mesh = new THREE.Mesh(geometry, material)
     mesh.position.set(x, y, z)
     scene.add(mesh)
@@ -313,7 +313,7 @@ function generateBox(x, y, z, width, depth, falls) {
     let mass = falls ? 5 : 0
     mass *= width / originalBoxSize
     mass *= depth / originalBoxSize
-    const body = new CANNON.Body({mass, shape})
+    const body = new CANNON.Body({ mass, shape })
     body.position.set(x, y, z)
     world.addBody(body)
 
@@ -349,7 +349,7 @@ function eventHandler(event) {
     // Only handle events that are not from buttons or UI elements
     if (event && event.target) {
         // Ignore clicks on buttons, inputs, and UI elements
-        if (event.target.tagName === 'BUTTON' || 
+        if (event.target.tagName === 'BUTTON' ||
             event.target.closest('button') ||
             event.target.closest('.mode-selector') ||
             event.target.closest('.stats-panel') ||
@@ -358,7 +358,7 @@ function eventHandler(event) {
             return
         }
     }
-    
+
     if (autopilot) {
         // Only show mode selector if clicking the game canvas area
         if (!event || event.target === renderer.domElement || event.target === document.body) {
@@ -384,7 +384,7 @@ function splitBlockAndNextOneIfOverlaps() {
 
     // Calculate timing error (difference from optimal timing)
     const timingError = currentTime - lastClickTime - 500 // assuming 500ms is optimal
-    
+
     // Calculate alignment offset percentage
     const alignmentOffset = (overhangSize / size) * 100
 
@@ -401,21 +401,21 @@ function splitBlockAndNextOneIfOverlaps() {
 
         // Add error metrics
         stats.addError(errorPercentage, Math.abs(timingError), alignmentOffset)
-        
+
         // Add score
         stats.addScore()
-        
+
         // Cut the box
         cutBox(topLayer, overlap, size, delta)
 
         // Create overhang if there is one
         if (overhangSize > 0.1) {
             const overhangShift = (overlap / 2 + overhangSize / 2) * Math.sign(delta)
-            const overhangX = direction === 'x' 
-                ? topLayer.threejs.position.x + overhangShift 
+            const overhangX = direction === 'x'
+                ? topLayer.threejs.position.x + overhangShift
                 : topLayer.threejs.position.x
-            const overhangZ = direction === 'z' 
-                ? topLayer.threejs.position.z + overhangShift 
+            const overhangZ = direction === 'z'
+                ? topLayer.threejs.position.z + overhangShift
                 : topLayer.threejs.position.z
             const overhangWidth = direction === 'x' ? overhangSize : topLayer.width
             const overhangDepth = direction === 'z' ? overhangSize : topLayer.depth
@@ -436,20 +436,20 @@ function splitBlockAndNextOneIfOverlaps() {
 
         // Check for milestone feedback
         feedback.showMilestoneMessage(currentScore)
-        
+
         // Check for combo feedback
         feedback.showComboFeedback(stats.currentGameStats.combo, gameModes.getCurrentMode())
-        
+
         // Check for mode-specific feedback
         const modeMessage = gameModes.getModeSpecificFeedback(currentScore, stats.currentGameStats.combo)
         feedback.showModeSpecificFeedback(modeMessage)
 
         // Add next layer
         addLayer(nextX, nextZ, newWidth, newDepth, nextDirection)
-        
+
         // Record new block movement start time
         blockMoveStartTime = currentTime
-        
+
     } else {
         // Missed the spot - no overlap, game over
         console.log('GAME OVER - No overlap detected')
@@ -459,14 +459,14 @@ function splitBlockAndNextOneIfOverlaps() {
 
     // Update last click time
     lastClickTime = currentTime
-    
+
     // Update HUD
     updateHUD()
 }
 
 function missedTheSpot() {
     const topLayer = stack[stack.length - 1]
-    
+
     // Add the falling block as an overhang
     addOverHang(
         topLayer.threejs.position.x,
@@ -474,27 +474,27 @@ function missedTheSpot() {
         topLayer.width,
         topLayer.depth
     )
-    
+
     // Remove from stack and physics world
     world.removeBody(topLayer.cannonjs)
     scene.remove(topLayer.threejs)
     stack.pop() // Remove the failed block from stack
 
     gameEnded = true
-    
+
     // End game stats
     stats.endGame()
-    
+
     // Show game over feedback
     const gameStats = stats.getGameSummary()
     feedback.showGameOverFeedback(gameStats)
-    
+
     // Update results display
     updateResultsDisplay(gameStats)
-    
+
     // Hide game HUD
     if (gameHudElement) gameHudElement.style.display = 'none'
-    
+
     // Show results
     if (resultsElement && !autopilot) {
         resultsElement.style.display = 'flex'
@@ -522,7 +522,7 @@ function updateHUD() {
     }
     if (currentFocusElement && !gameEnded) {
         // Calculate real-time focus approximation
-        const realTimeFocus = Math.max(0, Math.min(100, 
+        const realTimeFocus = Math.max(0, Math.min(100,
             stats.calculateFocusIndex() + Math.random() * 10 - 5
         ))
         currentFocusElement.textContent = Math.round(realTimeFocus)
@@ -541,7 +541,7 @@ function animate(time) {
         const timePassed = time - lastTime
         const currentLevel = stack.length - 2
         let speed = gameModes.getSpeed(currentLevel)
-        
+
         // Slow down speed for autopilot/background mode
         if (autopilot) {
             speed = speed * 0.3 // Make autopilot 70% slower for a more chill background
@@ -559,27 +559,27 @@ function animate(time) {
             !gameEnded &&
             (!autopilot ||
                 (autopilot &&
-                topLayer.threejs.position[topLayer.direction] <
+                    topLayer.threejs.position[topLayer.direction] <
                     previousLayer.threejs.position[topLayer.direction] +
-                        robotPrecision))
+                    robotPrecision))
 
         if (boxShouldMove) {
             const direction = topLayer.direction
             const currentPos = topLayer.threejs.position[direction]
             const movement = speed * timePassed
-            
+
             // Check bounds and implement bouncing
             const maxBounds = 6  // Reduced bounds to make bouncing more visible
             const minBounds = -5
-            
+
             // Initialize bounce direction if not set
             if (topLayer.bounceDirection === undefined) {
                 topLayer.bounceDirection = 1 // Start moving in positive direction
             }
-            
+
             // Calculate next position
             let nextPos = currentPos + (movement * topLayer.bounceDirection)
-            
+
             // Check for bouncing
             if (nextPos >= maxBounds) {
                 topLayer.bounceDirection = -1 // Reverse to negative direction
@@ -588,11 +588,11 @@ function animate(time) {
                 topLayer.bounceDirection = 1 // Reverse to positive direction  
                 nextPos = minBounds + 0.1 // Keep within bounds
             }
-            
+
             // Update positions
             topLayer.threejs.position[direction] = nextPos
             topLayer.cannonjs.position[direction] = nextPos
-            
+
         } else {
             if (autopilot) {
                 splitBlockAndNextOneIfOverlaps()
@@ -635,11 +635,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const statsCloseBtn = document.querySelector('.stats-close')
     const statsBackdrop = document.querySelector('.stats-backdrop')
     const closeStatsBtn = document.getElementById('close-stats-btn')
-    
+
     if (statsCloseBtn) statsCloseBtn.addEventListener('click', hideStatsPanel)
     if (statsBackdrop) statsBackdrop.addEventListener('click', hideStatsPanel)
-    if (closeStatsBtn) closeStatsBtn.addEventListener('click', hideStatsPanel)
-    
+    if (closeStatsBtn) {
+        closeStatsBtn.addEventListener('click', () => {
+            autopilot = true
+            gameEnded = false
+
+            if (resultsElement) resultsElement.style.display = 'none'
+            if (gameHudElement) gameHudElement.style.display = 'none'
+            if (statsPanel) hideStatsPanel()
+
+            setupGame()
+
+            if (instructionsElement) {
+                instructionsElement.style.display = 'flex'
+            }
+
+            if (scoreElement) scoreElement.innerText = 0
+
+            feedback.clearAllPopups()
+
+            console.log('Game reset to mode selection')
+        })
+    }
+
     // Reset stats button
     const resetStatsBtn = document.getElementById('reset-stats-btn')
     if (resetStatsBtn) {
@@ -652,13 +673,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
     }
-    
+
     // Mode selector backdrop
     const modeBackdrop = document.querySelector('.mode-backdrop')
     if (modeBackdrop) {
         modeBackdrop.addEventListener('click', hideModeSelector)
     }
-    
+
     // Initialize default selected mode
     const classicCard = document.querySelector('.mode-card[data-mode="classic"]')
     if (classicCard) {
