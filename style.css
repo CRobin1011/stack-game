@@ -255,13 +255,16 @@ kbd {
   left: 20px;
   right: 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
   z-index: 50;
   pointer-events: none;
 }
 
 .hud-score {
+  position: absolute;
+  top: 20px;
+  left: 20px;
   font-size: 3em;
   font-weight: bold;
   color: var(--mode-accent-color);
@@ -298,6 +301,9 @@ kbd {
 }
 
 .hud-actions {
+  position: absolute;
+  top: 20px;
+  right: 20px;
   display: flex;
   gap: 8px;
   pointer-events: all;
@@ -755,7 +761,7 @@ kbd {
 /* Feedback System */
 .feedback-container {
   position: fixed;
-  top: 20px;
+  top: 120px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;

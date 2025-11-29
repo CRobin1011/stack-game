@@ -308,12 +308,26 @@ export class GameEngine {
       const currentScore = this.stack.length - 1;
       this.ui.updateScore(currentScore);
 
-      this.feedback.showMilestoneMessage(currentScore);
-      this.feedback.showComboFeedback(this.stats.currentGameStats.combo, this.gameModes.getCurrentMode());
+      const comboShown = this.feedback.showComboFeedback(
+        this.stats.currentGameStats.combo,
+        this.gameModes.getCurrentMode()
+      )
 
-      const modeMessage = this.gameModes.getModeSpecificFeedback(currentScore, this.stats.currentGameStats.combo);
+      let milestoneShown = false;
+      if (!comboShown) {
+          milestoneShown = this.feedback.showMilestoneMessage(currentScore);
+      }
+
+      //this.feedback.showMilestoneMessage(currentScore);
+      //this.feedback.showComboFeedback(this.stats.currentGameStats.combo, this.gameModes.getCurrentMode());   
+      let modeMessage = null;
+      if(!comboShown && !milestoneShown){
+        modeMessage = this.gameModes.getModeSpecificFeedback(
+          currentScore,
+          this.stats.currentGameStats.combo
+        )
+      }
       this.feedback.showModeSpecificFeedback(modeMessage);
-
       this._addLayer(nextX, nextZ, newWidth, newDepth, nextDirection);
 
       this.blockMoveStartTime = currentTime;
