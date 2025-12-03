@@ -45,6 +45,12 @@ export class GameEngine {
     this.towerYOffset = 0;
 
     this.finalScore = 0;
+
+    this.lightnings = [];
+    this.lightFlashTtl = 0;
+    this.lightFlashStartTtl = 0;
+    this.baseAmbientIntensity = 0.6;
+    this.baseDirectionalIntensity = 0.6;
   }
 
   init() {
@@ -77,12 +83,15 @@ export class GameEngine {
 
     this.scene = new THREE.Scene();
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, this.baseAmbientIntensity);
     this.scene.add(ambientLight);
 
-    const dLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const dLight = new THREE.DirectionalLight(0xffffff, this.baseDirectionalIntensity);
     dLight.position.set(10, 20, 0);
     this.scene.add(dLight);
+
+    this.ambientLight = ambientLight;
+    this.directionalLight = dLight;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -277,6 +286,11 @@ export class GameEngine {
         this.stats.addPerfect();
         this.feedback.showPerfectFeedback();
         this._spawnPerfectBorder(topLayer);
+        this._spawnLightningStrike(topLayer);
+      }else{
+        if(this.stats.resetPerfectCombo){
+          this.stats.resetPerfectCombo();
+        }
       }
 
       this.stats.addError(errorPercentage, Math.abs(timingError), alignmentOffset);
@@ -334,6 +348,9 @@ export class GameEngine {
 
     } else {
       this.stats.resetCombo();
+      if (this.stats.resetPerfectCombo) {
+        this.stats.resetPerfectCombo();
+      }
       this._missedTheSpot();
     }
 
@@ -341,6 +358,129 @@ export class GameEngine {
 
     this.ui.updateHUD(this.stats, this.gameModes.getCurrentConfig(), this.gameEnded);
   }
+
+    _spawnLightningStrike(layer) {
+    const strikeHeight = 8;
+
+    const beamThickness = Math.min(layer.width, layer.depth) * 0.25;
+    const segments = 4;            // banyak segmen zigzag
+    const segmentHeight = strikeHeight / segments;
+
+    const group = new THREE.Group();
+
+    // titik awal di atas tower
+    let currX = layer.threejs.position.x;
+    let currZ = layer.threejs.position.z;
+    let currYTop = layer.threejs.position.y + strikeHeight + 1;
+
+    const maxOffset = beamThickness * 0.8;
+
+    for (let i = 0; i < segments; i++) {
+      const nextYTop = currYTop - segmentHeight;
+
+      // tiap segmen boleh belok sedikit di X atau Z
+      let nextX = currX;
+      let nextZ = currZ;
+
+      if (i % 2 === 0) {
+        // belok di X
+        nextX += (Math.random() - 0.5) * maxOffset;
+      } else {
+        // belok di Z
+        nextZ += (Math.random() - 0.5) * maxOffset;
+      }
+
+      const start = new THREE.Vector3(currX, currYTop, currZ);
+      const end = new THREE.Vector3(nextX, nextYTop, nextZ);
+      const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+
+      const dir = new THREE.Vector3().subVectors(end, start);
+      const length = dir.length();
+
+      const geom = new THREE.BoxGeometry(beamThickness, length, beamThickness);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 1.0,
+      });
+
+      const segMesh = new THREE.Mesh(geom, mat);
+
+      // box defaultnya memanjang di Y, jadi kita putar ke arah segmen
+      segMesh.position.copy(mid);
+      const up = new THREE.Vector3(0, 1, 0);
+      segMesh.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+
+      group.add(segMesh);
+
+      currX = nextX;
+      currZ = nextZ;
+      currYTop = nextYTop;
+    }
+
+    // simpan TTL di group
+    group.userData = {
+      ttl: 160,
+      startTtl: 160,
+    };
+
+    this.scene.add(group);
+    this.lightnings.push(group);
+
+    // flash cahaya global
+    this.lightFlashTtl = this.lightFlashStartTtl = 180;
+  }
+
+      _updateLightningEffects(deltaMs) {
+    if (!this.lightnings) this.lightnings = [];
+
+    for (let i = this.lightnings.length - 1; i >= 0; i--) {
+      const bolt = this.lightnings[i];
+      const data = bolt.userData;
+      data.ttl -= deltaMs;
+
+      const t = Math.max(data.ttl, 0);
+      const alpha = t / data.startTtl;
+
+      // apply fade ke semua mesh di dalam group
+      bolt.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.opacity = alpha;
+        }
+      });
+
+      if (data.ttl <= 0) {
+        this.scene.remove(bolt);
+        this.lightnings.splice(i, 1);
+      }
+    }
+
+    // flash cahaya
+    if (this.lightFlashTtl > 0) {
+      this.lightFlashTtl -= deltaMs;
+      const t = Math.max(this.lightFlashTtl, 0) / this.lightFlashStartTtl;
+      const flashStrength = Math.sin((1 - t) * Math.PI);
+
+      if (this.ambientLight && this.directionalLight) {
+        this.ambientLight.intensity =
+          this.baseAmbientIntensity + flashStrength * 0.8;
+
+        this.directionalLight.intensity =
+          this.baseDirectionalIntensity + flashStrength * 2.5;
+      }
+
+      if (this.lightFlashTtl <= 0) {
+        if (this.ambientLight) {
+          this.ambientLight.intensity = this.baseAmbientIntensity;
+        }
+        if (this.directionalLight) {
+          this.directionalLight.intensity = this.baseDirectionalIntensity;
+        }
+      }
+    }
+  }
+
+
 
   _cutBox(topLayer, overlap, size, delta) {
     const direction = topLayer.direction;
@@ -364,7 +504,10 @@ export class GameEngine {
   _missedTheSpot() {
     const topLayer = this.stack[this.stack.length - 1];
 
-    this.finalScore = this.stats.currentGameStats.score;
+    const finalScore = this.stats.currentGameStats.score;
+    const gameStats = this.stats.getGameSummary();
+
+    this.finalScore = finalScore;
 
     this._addOverhang(
       topLayer.threejs.position.x,
@@ -380,21 +523,20 @@ export class GameEngine {
     this.gameEnded = true;
 
     this.stats.endGame();
-    const gameStats = this.stats.getGameSummary();
 
     this._startZoomOutIfNeeded();
 
     if (this.finalScore >= 20) {
       this.pendingGameOver = {
         gameStats,
-        score: this.stats.currentGameStats.score,
+        score: finalScore,
       };
       this.gameOverShown = false;
       this.gameOverDelayElapsed = 0;
     } else {
       // Show results immediately for scores < 20
       this.feedback.showGameOverFeedback(gameStats);
-      this.ui.showResults(gameStats, this.stats.currentGameStats.score);
+      this.ui.showResults(gameStats, finalScore);
       this.gameOverShown = true;
       this.pendingGameOver = null;
     }
@@ -475,6 +617,7 @@ export class GameEngine {
       this._updatePerfectBorders(timePassed);
       this._updateZoomOut(timePassed);
       this._updatePhysics(timePassed);
+      this._updateLightningEffects(timePassed);
       this.renderer.render(this.scene, this.camera);
     }
     this.lastTime = time;
