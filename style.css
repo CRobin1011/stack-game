@@ -82,6 +82,10 @@ canvas {
   transform: translateY(-1px);
 }
 
+.btn-full {
+  width: 100%;
+}
+
 /* Modal Base Styles */
 .modal-base {
   position: fixed;
@@ -200,7 +204,7 @@ kbd {
 }
 
 #results .content {
-  max-width: 400px;
+  max-width: 370px;
   padding: 40px;
   border-radius: var(--border-radius);
   background: rgba(40, 40, 40, 0.95);
