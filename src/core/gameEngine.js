@@ -360,127 +360,129 @@ export class GameEngine {
   }
 
     _spawnLightningStrike(layer) {
-    const strikeHeight = 8;
+      if (!layer) return;
 
-    const beamThickness = Math.min(layer.width, layer.depth) * 0.25;
-    const segments = 4;            // banyak segmen zigzag
-    const segmentHeight = strikeHeight / segments;
+      const anchor = layer.threejs;
 
-    const group = new THREE.Group();
+      const BORDER_SCALE = 2.0;
+      const w = layer.width  * BORDER_SCALE;
+      const d = layer.depth * BORDER_SCALE;
 
-    // titik awal di atas tower
-    let currX = layer.threejs.position.x;
-    let currZ = layer.threejs.position.z;
-    let currYTop = layer.threejs.position.y + strikeHeight + 1;
-
-    const maxOffset = beamThickness * 0.8;
-
-    for (let i = 0; i < segments; i++) {
-      const nextYTop = currYTop - segmentHeight;
-
-      // tiap segmen boleh belok sedikit di X atau Z
-      let nextX = currX;
-      let nextZ = currZ;
-
-      if (i % 2 === 0) {
-        // belok di X
-        nextX += (Math.random() - 0.5) * maxOffset;
-      } else {
-        // belok di Z
-        nextZ += (Math.random() - 0.5) * maxOffset;
+      if (this.perfectFrame) {
+        this.scene.remove(this.perfectFrame);
+        this.lightnings = this.lightnings.filter(b => b !== this.perfectFrame);
       }
 
-      const start = new THREE.Vector3(currX, currYTop, currZ);
-      const end = new THREE.Vector3(nextX, nextYTop, nextZ);
-      const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      const geo = new THREE.BoxGeometry(1, 0.01, 1);
+      const edges = new THREE.EdgesGeometry(geo);
 
-      const dir = new THREE.Vector3().subVectors(end, start);
-      const length = dir.length();
-
-      const geom = new THREE.BoxGeometry(beamThickness, length, beamThickness);
-      const mat = new THREE.MeshBasicMaterial({
+      const mat = new THREE.LineBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 1.0,
+        opacity: 1,
+        linewidth: 4,
       });
 
-      const segMesh = new THREE.Mesh(geom, mat);
+      const frame = new THREE.LineSegments(edges, mat);
 
-      // box defaultnya memanjang di Y, jadi kita putar ke arah segmen
-      segMesh.position.copy(mid);
-      const up = new THREE.Vector3(0, 1, 0);
-      segMesh.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+      // scale sesuai blok (lebih gede)
+      frame.scale.set(w, 1, d);
 
-      group.add(segMesh);
+      // ✅ JANGAN timpa userData, cukup isi field-nya:
+      frame.userData = frame.userData || {};
+      frame.userData.ttl = 300;
+      frame.userData.startTtl = 300;
+      frame.userData.anchor = anchor;
+      frame.userData.baseScaleX = w;
+      frame.userData.baseScaleZ = d;
 
-      currX = nextX;
-      currZ = nextZ;
-      currYTop = nextYTop;
+      // diamond + hadap kamera
+      frame.rotation.y = Math.PI / 4;
+      const cam = this.camera.position;
+      const dx = cam.x - anchor.position.x;
+      const dz = cam.z - anchor.position.z;
+      const angleToCam = Math.atan2(dx, dz);
+      frame.rotation.y += angleToCam;
+
+      frame.position.copy(anchor.position);
+      frame.position.y += BOX_HEIGHT * 0.55;
+
+      this.scene.add(frame);
+      this.lightnings.push(frame);
+      this.perfectFrame = frame;
+
+      this.lightFlashTtl = this.lightFlashStartTtl = 180;
     }
-
-    // simpan TTL di group
-    group.userData = {
-      ttl: 160,
-      startTtl: 160,
-    };
-
-    this.scene.add(group);
-    this.lightnings.push(group);
-
-    // flash cahaya global
-    this.lightFlashTtl = this.lightFlashStartTtl = 180;
-  }
-
+    
       _updateLightningEffects(deltaMs) {
-    if (!this.lightnings) this.lightnings = [];
+      // 🔹 Frame ngikut anchor (blok perfect), bukan topLayer
+      if (this.perfectFrame) {
+      const pf = this.perfectFrame;
+      const anchor = pf.userData.anchor;
 
-    for (let i = this.lightnings.length - 1; i >= 0; i--) {
-      const bolt = this.lightnings[i];
-      const data = bolt.userData;
-      data.ttl -= deltaMs;
+      pf.position.copy(anchor.position);
+      pf.position.y += BOX_HEIGHT * 0.55;
 
-      const t = Math.max(data.ttl, 0);
-      const alpha = t / data.startTtl;
+      // orientasi tetap ke kamera
+      const cam = this.camera.position;
+      const dx = cam.x - pf.position.x;
+      const dz = cam.z - pf.position.z;
 
-      // apply fade ke semua mesh di dalam group
-      bolt.traverse((child) => {
-        if (child.isMesh && child.material) {
-          child.material.opacity = alpha;
-        }
-      });
-
-      if (data.ttl <= 0) {
-        this.scene.remove(bolt);
-        this.lightnings.splice(i, 1);
-      }
+      pf.rotation.y = Math.PI/4 + Math.atan2(dx, dz);
     }
 
-    // flash cahaya
-    if (this.lightFlashTtl > 0) {
-      this.lightFlashTtl -= deltaMs;
-      const t = Math.max(this.lightFlashTtl, 0) / this.lightFlashStartTtl;
-      const flashStrength = Math.sin((1 - t) * Math.PI);
+      if (!this.lightnings) this.lightnings = [];
 
-      if (this.ambientLight && this.directionalLight) {
-        this.ambientLight.intensity =
-          this.baseAmbientIntensity + flashStrength * 0.8;
+      for (let i = this.lightnings.length - 1; i >= 0; i--) {
+        const bolt = this.lightnings[i];
+        const data = bolt.userData;
+        data.ttl -= deltaMs;
 
-        this.directionalLight.intensity =
-          this.baseDirectionalIntensity + flashStrength * 2.5;
+        const t = Math.max(data.ttl, 0);
+        const alpha = t / data.startTtl;
+
+        if (bolt.traverse) {
+          bolt.traverse((child) => {
+            if (child.isMesh && child.material) {
+              child.material.opacity = alpha;
+            }
+          });
+        } else if (bolt.material) {
+          bolt.material.opacity = alpha;
+        }
+
+          const pulse = 1 + (1 - alpha) * 0.15; // efek nafas
+          const baseX = bolt.userData.baseScaleX || 1;
+          const baseZ = bolt.userData.baseScaleZ || 1;
+          bolt.scale.set(baseX*pulse, 1, baseZ*pulse);
+
+        if (data.ttl <= 0) {
+          bolt.visible = false;
+        }
       }
 
-      if (this.lightFlashTtl <= 0) {
-        if (this.ambientLight) {
-          this.ambientLight.intensity = this.baseAmbientIntensity;
+      // flash cahaya (punyamu)
+      if (this.lightFlashTtl > 0) {
+        this.lightFlashTtl -= deltaMs;
+        const t = Math.max(this.lightFlashTtl, 0) / this.lightFlashStartTtl;
+        const flashStrength = Math.sin((1 - t) * Math.PI);
+
+        if (this.ambientLight && this.directionalLight) {
+          this.ambientLight.intensity =
+            this.baseAmbientIntensity + flashStrength * 0.8;
+
+          this.directionalLight.intensity =
+            this.baseDirectionalIntensity + flashStrength * 2.5;
         }
-        if (this.directionalLight) {
-          this.directionalLight.intensity = this.baseDirectionalIntensity;
+
+        if (this.lightFlashTtl <= 0) {
+          if (this.ambientLight)
+            this.ambientLight.intensity = this.baseAmbientIntensity;
+          if (this.directionalLight)
+            this.directionalLight.intensity = this.baseDirectionalIntensity;
         }
       }
     }
-  }
-
-
 
   _cutBox(topLayer, overlap, size, delta) {
     const direction = topLayer.direction;
