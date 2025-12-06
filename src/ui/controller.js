@@ -25,6 +25,7 @@ export class UIController {
         this.quickFocusElement = document.getElementById('quick-focus');
         this.viewReviewBtn = document.getElementById('view-review-btn');
         this.playAgainBtn = document.getElementById('play-again-btn');
+        this.homeBtn = document.getElementById('home-btn');
 
         this.statsPanel = document.getElementById('stats-panel');
         this.menuBtn = document.getElementById('menu-btn');
@@ -97,6 +98,31 @@ export class UIController {
                 this.hideResults();
                 this.showHud();
             });
+        }
+
+        if (this.homeBtn) {
+            this.homeBtn.addEventListener('click', () => {
+                // Hide stats panel first
+                this.hideStatsPanel()
+
+                this.hideResults()
+                this.hideHud()
+
+                // Hide all game UI elements
+
+                if (this.scoreElement) {
+                    this.scoreElement.textContent = '0'
+                }
+
+                // Show instructions screen (beginning page) - this is the mode selection screen
+                if (this.instructionsElement) {
+                    this.instructionsElement.style.display = 'flex'
+                }
+
+                this.feedback.clearAllPopups()
+
+                console.log('Returned to beginning page (mode selection)')
+            })
         }
 
         this.review.setOnPlayAgain(() => {

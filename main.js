@@ -635,6 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statsCloseBtn = document.querySelector('.stats-close')
     const statsBackdrop = document.querySelector('.stats-backdrop')
     const closeStatsBtn = document.getElementById('close-stats-btn')
+    const homeScreenBtn = document.getElementById('home-btn')
 
     if (statsCloseBtn) statsCloseBtn.addEventListener('click', hideStatsPanel)
     if (statsBackdrop) statsBackdrop.addEventListener('click', hideStatsPanel)
@@ -642,6 +643,31 @@ document.addEventListener('DOMContentLoaded', () => {
         closeStatsBtn.addEventListener('click', () => {
             autopilot = true
             gameEnded = false
+
+            if (resultsElement) resultsElement.style.display = 'none'
+            if (gameHudElement) gameHudElement.style.display = 'none'
+            if (statsPanel) hideStatsPanel()
+
+            setupGame()
+
+            if (instructionsElement) {
+                instructionsElement.style.display = 'flex'
+            }
+
+            if (scoreElement) scoreElement.innerText = 0
+
+            feedback.clearAllPopups()
+
+            console.log('Game reset to mode selection')
+        })
+    }
+
+    if (homeScreenBtn) {
+        homeScreenBtn.addEventListener('click', () => {
+            autopilot = true
+            gameEnded = false
+
+            console.log("HOME BUTTON CLICKED")
 
             if (resultsElement) resultsElement.style.display = 'none'
             if (gameHudElement) gameHudElement.style.display = 'none'
