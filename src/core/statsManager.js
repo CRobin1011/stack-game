@@ -29,7 +29,9 @@ export class StatsManager {
                 totalGames: loadedStats.totalGames || 0,
                 totalPlayTime: loadedStats.totalPlayTime || 0,
                 focusIndexHistory: loadedStats.focusIndexHistory || [],
-                bestFocusIndex: loadedStats.bestFocusIndex || 0
+                bestFocusIndex: loadedStats.bestFocusIndex || 0,
+                longestPerfectCombo: loadedStats.longestPerfectCombo || 0,
+                totalPerfectsCombo: loadedStats.totalPerfectsCombo || 0,
             };
         }
         
@@ -41,6 +43,8 @@ export class StatsManager {
             beatenHighScore: 0,
             longestCombo: 0,
             perfects: 0,
+            longestPerfectCombo: 0,
+            totalPerfectsCombo: 0,
             cutTiles: 0,
             totalErrorPercentage: 0,
             bestErrorPercentage: 100,
@@ -60,7 +64,10 @@ export class StatsManager {
         return {
             score: 0,
             combo: 0,
+            longestCombo:0,
             perfects: 0,
+            perfectCombo: 0,
+            longestPerfectCombo: 0,
             errors: [],
             timingErrors: [],
             alignmentOffsets: [],
@@ -91,11 +98,21 @@ export class StatsManager {
             this.stats.highScore = this.currentGameStats.score;
         }
         
-        // Update longest combo
-        if (this.currentGameStats.combo > this.stats.longestCombo) {
-            this.stats.longestCombo = this.currentGameStats.combo;
+        // longest combo biasa di game ini
+        const gameLongestCombo = this.currentGameStats.longestCombo || this.currentGameStats.combo || 0;
+        if (gameLongestCombo > this.stats.longestCombo) {
+            this.stats.longestCombo = gameLongestCombo;
         }
-        
+
+        // longest perfect combo di game ini
+        const gameLongestPerfectCombo = this.currentGameStats.longestPerfectCombo || 0;
+        if (gameLongestPerfectCombo > (this.stats.longestPerfectCombo || 0)) {
+            this.stats.longestPerfectCombo = gameLongestPerfectCombo;
+        }
+
+        // optional: total akumulasi perfect combos
+        this.stats.totalPerfectsCombo = (this.stats.totalPerfectsCombo || 0) + gameLongestPerfectCombo;
+
         // Update perfects
         this.stats.perfects += this.currentGameStats.perfects;
         this.stats.cutTiles += this.currentGameStats.score;
@@ -139,6 +156,10 @@ export class StatsManager {
         this.currentGameStats.score++;
         this.currentGameStats.combo++;
         
+        if(this.currentGameStats.combo > (this.currentGameStats.longestCombo || 0)){
+            this.currentGameStats.longestCombo = this.currentGameStats.combo;
+        }
+
         // Ensure clickTimes array exists
         if (!this.currentGameStats.clickTimes) this.currentGameStats.clickTimes = [];
         this.currentGameStats.clickTimes.push(Date.now());
@@ -146,6 +167,15 @@ export class StatsManager {
 
     addPerfect() {
         this.currentGameStats.perfects++;
+
+        if(this.currentGameStats.perfectCombo == null){
+            this.currentGameStats.perfectCombo = 0;
+        }
+        this.currentGameStats.perfectCombo++;
+
+        if(this.currentGameStats.perfectCombo > (this.currentGameStats.longestPerfectCombo || 0)){
+            this.currentGameStats.longestPerfectCombo = this.currentGameStats.perfectCombo
+        }
     }
 
     addError(errorPercentage, timingError, alignmentOffset) {
@@ -162,6 +192,11 @@ export class StatsManager {
     resetCombo() {
         this.currentGameStats.combo = 0;
     }
+
+    resetPerfectCombo() {
+        this.currentGameStats.perfectCombo = 0;
+    }
+
 
     calculateCurrentGameErrorPercentage() {
         if (!this.currentGameStats.errors || this.currentGameStats.errors.length === 0) return 0;
@@ -191,7 +226,7 @@ export class StatsManager {
         const perfectPercentage = this.calculateCurrentGamePerfectPercentage();
         const errorPercentage = this.calculateCurrentGameErrorPercentage();
         const cpm = this.calculateCPM();
-        const combo = this.currentGameStats.combo;
+        const combo = this.currentGameStats.longestCombo || this.currentGameStats.combo;
         
         // Baseline thresholds based on average human performance
         const avgScore = 10; // Average score for casual players
@@ -220,41 +255,58 @@ export class StatsManager {
     }
 
     getGameSummary() {
-        const currentCombo = this.currentGameStats.combo || 0;
-        const isComboRecord = currentCombo > this.stats.longestCombo;
+        const gameLongestCombo = this.currentGameStats.longestCombo || this.currentGameStats.combo || 0;
+
+        const currentStreak = this.currentGameStats.combo || 0;
+        const currentLongestStreak = this.currentGameStats.longestCombo | 0;
+
+        const currentPerfectCombo = this.currentGameStats.perfectCombo || 0;
+        const longestPerfectCombo = this.currentGameStats.longestPerfectCombo || 0;
+
+        const isComboRecord = gameLongestCombo > this.stats.longestCombo;
+        const isPerfectComboRecord = longestPerfectCombo > (this.stats.longestPerfectCombo || 0);
+
         const perfectPercentage = this.calculateCurrentGamePerfectPercentage();
         const errorPercentage = this.calculateCurrentGameErrorPercentage();
         const cpm = this.calculateCPM();
         const focusIndex = this.currentGameStats.focusIndex || this.calculateFocusIndex();
-        
-        // Ensure arrays exist before calculating averages
+
         const timingErrors = this.currentGameStats.timingErrors || [];
         const alignmentOffsets = this.currentGameStats.alignmentOffsets || [];
-        
+
         return {
             longestCombo: {
-                current: currentCombo,
+                current: gameLongestCombo,
                 isRecord: isComboRecord,
-                previous: this.stats.longestCombo
+                previous: this.stats.longestCombo,
+            },
+            perfectCombo: {
+                current: currentPerfectCombo,
+                longest: longestPerfectCombo,
+                bestAllTime: this.stats.longestPerfectCombo || 0,
+                isRecord: isPerfectComboRecord,
             },
             perfectPercentage: {
                 current: perfectPercentage,
-                best: this.stats.bestPerfectPercentage
+                best: this.stats.bestPerfectPercentage,
             },
             errorPercentage: {
                 current: errorPercentage,
-                best: this.stats.bestErrorPercentage
+                best: this.stats.bestErrorPercentage,
             },
             totalGames: this.stats.totalGames + 1,
-            cpm: cpm,
-            focusIndex: focusIndex,
-            timingErrorAvg: timingErrors.length > 0 
-                ? timingErrors.reduce((a, b) => a + b, 0) / timingErrors.length 
-                : 0,
-            alignmentOffsetAvg: alignmentOffsets.length > 0
-                ? alignmentOffsets.reduce((a, b) => a + b, 0) / alignmentOffsets.length
-                : 0,
-            streak: currentCombo
+            cpm,
+            focusIndex,
+            timingErrorAvg:
+                timingErrors.length > 0
+                    ? timingErrors.reduce((a, b) => a + b, 0) / timingErrors.length
+                    : 0,
+            alignmentOffsetAvg:
+                alignmentOffsets.length > 0
+                    ? alignmentOffsets.reduce((a, b) => a + b, 0) /
+                    alignmentOffsets.length
+                    : 0,
+            streak: currentStreak,
         };
     }
 
