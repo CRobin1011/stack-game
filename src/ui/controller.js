@@ -21,9 +21,11 @@ export class UIController {
 
         this.finalScoreElement = document.getElementById('final-score-value');
         this.quickComboElement = document.getElementById('quick-combo');
+        this.quickPerfectComboElement = document.getElementById('quick-perfect-combo');
         this.quickFocusElement = document.getElementById('quick-focus');
         this.viewReviewBtn = document.getElementById('view-review-btn');
         this.playAgainBtn = document.getElementById('play-again-btn');
+        this.homeBtn = document.getElementById('home-btn');
 
         this.statsPanel = document.getElementById('stats-panel');
         this.menuBtn = document.getElementById('menu-btn');
@@ -96,6 +98,31 @@ export class UIController {
                 this.hideResults();
                 this.showHud();
             });
+        }
+
+        if (this.homeBtn) {
+            this.homeBtn.addEventListener('click', () => {
+                // Hide stats panel first
+                this.hideStatsPanel()
+
+                this.hideResults()
+                this.hideHud()
+
+                // Hide all game UI elements
+
+                if (this.scoreElement) {
+                    this.scoreElement.textContent = '0'
+                }
+
+                // Show instructions screen (beginning page) - this is the mode selection screen
+                if (this.instructionsElement) {
+                    this.instructionsElement.style.display = 'flex'
+                }
+
+                this.feedback.clearAllPopups()
+
+                console.log('Returned to beginning page (mode selection)')
+            })
         }
 
         this.review.setOnPlayAgain(() => {
@@ -186,9 +213,30 @@ export class UIController {
     }
 
     showResults(gameStats, score) {
-        if (this.finalScoreElement) this.finalScoreElement.textContent = score;
-        if (this.quickComboElement) this.quickComboElement.textContent = gameStats.longestCombo.current;
-        if (this.quickFocusElement) this.quickFocusElement.textContent = gameStats.focusIndex;
+        if (this.finalScoreElement) {
+            this.finalScoreElement.textContent = score;
+        }
+    // Combo biasa (longest combo di game ini)
+        if (this.quickComboElement) {
+            const longestCombo =
+                gameStats.longestCombo?.current ??
+                gameStats.longestCombo ??
+                0;
+            this.quickComboElement.textContent = longestCombo;
+        }
+
+        // Perfect combo (longest perfect combo di game ini)
+        if (this.quickPerfectComboElement) {
+            const longestPerfect =
+                gameStats.perfectCombo?.longest ??
+                gameStats.perfectCombo?.current ??
+                0;
+            this.quickPerfectComboElement.textContent = longestPerfect;
+        }
+
+        if (this.quickFocusElement) {
+            this.quickFocusElement.textContent = gameStats.focusIndex;
+        }
 
         if (this.resultsElement) this.resultsElement.style.display = 'flex';
         this.hideHud();
@@ -245,17 +293,24 @@ export class UIController {
             this.currentModeElement.textContent = modeConfig.name;
         }
 
+        // 🔹 Ambil perfectCombo dari stats, bukan dari this
         if (this.currentComboElement) {
-            this.currentComboElement.textContent = stats.currentGameStats.combo;
+            const perfectCombo = this.stats.currentGameStats?.perfectCombo ?? 0;
+            this.currentComboElement.textContent = perfectCombo;
         }
 
         if (this.currentFocusElement && !gameEnded) {
-            const realTimeFocus = Math.max(0, Math.min(100,
-                stats.calculateFocusIndex() + Math.random() * 10 - 5
-            ));
+            const realTimeFocus = Math.max(
+                0,
+                Math.min(
+                    100,
+                    stats.calculateFocusIndex() + Math.random() * 10 - 5
+                )
+            );
             this.currentFocusElement.textContent = Math.round(realTimeFocus);
         }
     }
+
 
     updateStatsPanel() {
         const allTimeStats = this.stats.getAllTimeStats();
